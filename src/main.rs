@@ -5,21 +5,42 @@
 //
 // NOTE: May also need to install the llmv-preview component as well
 //
+extern crate rustc_ast;
 extern crate rustc_error_codes;
 extern crate rustc_errors;
 extern crate rustc_hash;
 extern crate rustc_hir;
 extern crate rustc_interface;
+extern crate rustc_lint;
 extern crate rustc_session;
 extern crate rustc_span;
 
+mod lint;
+
 use rustc_errors::registry;
 use rustc_hash::{FxHashMap, FxHashSet};
-use rustc_session::config;
+use rustc_lint::{LintId, LintStore};
+use rustc_session::{config, Session};
 use rustc_span::source_map;
+
 use std::path;
 use std::process;
 use std::str;
+
+use self::lint::{SmplLint, SMPL_LINT};
+
+fn register_lints(_: &Session, lint_store: &mut LintStore) {
+    lint_store.register_lints(&[SMPL_LINT]);
+    lint_store.register_group(
+        true,
+        "smpl::lint",
+        Some("smpl"),
+        vec![LintId::of(SMPL_LINT)],
+    );
+    lint_store.register_pre_expansion_pass(|| Box::new(SmplLint));
+}
+
+// Option<Box<dyn Fn(&Session, &mut LintStore) + Send + Sync>>)
 
 fn main() {
     let out = process::Command::new("rustc")
@@ -38,7 +59,7 @@ fn main() {
         crate_cfg: FxHashSet::default(), // FxHashSet<(String, Option<String>)>
         input: config::Input::Str {
             name: source_map::FileName::Custom("main.rs".to_string()),
-            input: "static HELLO: &str = \"Hello, world!\"; fn main() { println!(\"{}\", HELLO); }"
+            input: "static HELLO: &str = \"Hello, world!\"; #[smpl::lint]\nfn main() { println!(\"{}\", HELLO); }"
                 .to_string(),
         },
         input_path: None,  // Option<PathBuf>
@@ -55,7 +76,7 @@ fn main() {
         //
         // Note that if you find a Some here you probably want to call that function in the new
         // function being registered.
-        register_lints: None, // Option<Box<dyn Fn(&Session, &mut LintStore) + Send + Sync>>
+        register_lints: Some(Box::new(register_lints)), // Option<Box<dyn Fn(&Session, &mut LintStore) + Send + Sync>>
         // This is a callback from the driver that is called just after we have populated
         // the list of queries.
         //
@@ -68,16 +89,17 @@ fn main() {
     rustc_interface::run_compiler(config, |compiler| {
         compiler.enter(|queries| {
             // Parse the program and print the syntax tree.
-            let parse = queries.parse().unwrap().take();
-            println!("{:#?}", parse);
+            // let parse = queries.parse().unwrap().take();
+            // println!("{:#?}", parse);
             // Analyze the program and inspect the types of definitions.
             queries.global_ctxt().unwrap().take().enter(|tcx| {
+                println!("DONE");
                 for (_, item) in &tcx.hir().krate().items {
                     match item.kind {
                         rustc_hir::ItemKind::Static(_, _, _) | rustc_hir::ItemKind::Fn(_, _, _) => {
-                            let name = item.ident;
-                            let ty = tcx.type_of(tcx.hir().local_def_id(item.hir_id));
-                            println!("{:?}:\t{:?}", name, ty)
+                            //let name = item.ident;
+                            //let ty = tcx.type_of(tcx.hir().local_def_id(item.hir_id));
+                            //println!("{:?}:\t{:?}", name, ty)
                         }
                         _ => (),
                     }
