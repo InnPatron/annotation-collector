@@ -8,6 +8,7 @@
 extern crate rustc_ast;
 extern crate rustc_error_codes;
 extern crate rustc_errors;
+extern crate rustc_feature;
 extern crate rustc_hash;
 extern crate rustc_hir;
 extern crate rustc_interface;
@@ -43,6 +44,15 @@ fn register_lints(_: &Session, lint_store: &mut LintStore) {
 // Option<Box<dyn Fn(&Session, &mut LintStore) + Send + Sync>>)
 
 fn main() {
+    // NOTE: Input program needs to register the tool attribute
+    // See:
+    //   1) Issue #44690 for RFC 2103
+    //          https://github.com/rust-lang/rust/issues/44690#issue-258689168
+    //   2) PR #66070 for implementations
+    //          https://github.com/rust-lang/rust/pull/66070#issue-336079332)
+    //
+    let input = "#![feature(register_tool)]\n#![register_tool(smpl)]\nstatic HELLO: &str = \"Hello, world!\"; #[smpl::capture(\"root::main\")]\nfn main() { println!(\"{}\", HELLO); }";
+
     let out = process::Command::new("rustc")
         .arg("--print=sysroot")
         .current_dir(".")
@@ -53,14 +63,14 @@ fn main() {
         // Command line options
         opts: config::Options {
             maybe_sysroot: Some(path::PathBuf::from(sysroot)),
+            unstable_features: rustc_feature::UnstableFeatures::Allow,
             ..config::Options::default()
         },
         // cfg! configuration in addition to the default ones
         crate_cfg: FxHashSet::default(), // FxHashSet<(String, Option<String>)>
         input: config::Input::Str {
             name: source_map::FileName::Custom("main.rs".to_string()),
-            input: "static HELLO: &str = \"Hello, world!\"; #[smpl::lint]\nfn main() { println!(\"{}\", HELLO); }"
-                .to_string(),
+            input: input.to_string(),
         },
         input_path: None,  // Option<PathBuf>
         output_dir: None,  // Option<PathBuf>
@@ -97,9 +107,9 @@ fn main() {
                 for (_, item) in &tcx.hir().krate().items {
                     match item.kind {
                         rustc_hir::ItemKind::Static(_, _, _) | rustc_hir::ItemKind::Fn(_, _, _) => {
-                            //let name = item.ident;
-                            //let ty = tcx.type_of(tcx.hir().local_def_id(item.hir_id));
-                            //println!("{:?}:\t{:?}", name, ty)
+                            let name = item.ident;
+                            let ty = tcx.type_of(tcx.hir().local_def_id(item.hir_id));
+                            println!("{:?}:\t{:?}", name, ty)
                         }
                         _ => (),
                     }
