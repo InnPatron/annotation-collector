@@ -54,6 +54,11 @@ fn main() {
     //
     let input = "#![feature(register_tool)]\n#![register_tool(smpl)]\nstatic HELLO: &str = \"Hello, world!\"; #[smpl::capture(\"root::main\")]\nfn main() { println!(\"{}\", HELLO); }";
 
+    let input = config::Input::Str {
+        name: source_map::FileName::Custom("main.rs".to_string()),
+        input: input.to_string(),
+    };
+
     let out = process::Command::new("rustc")
         .arg("--print=sysroot")
         .current_dir(".")
@@ -69,10 +74,7 @@ fn main() {
         },
         // cfg! configuration in addition to the default ones
         crate_cfg: FxHashSet::default(), // FxHashSet<(String, Option<String>)>
-        input: config::Input::Str {
-            name: source_map::FileName::Custom("main.rs".to_string()),
-            input: input.to_string(),
-        },
+        input,
         input_path: None,  // Option<PathBuf>
         output_dir: None,  // Option<PathBuf>
         output_file: None, // Option<PathBuf>
