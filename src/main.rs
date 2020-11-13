@@ -140,9 +140,14 @@ fn main() {
         input: input.to_string(),
     };
 
-    let input2 = config::Input::File(std::path::PathBuf::from(
-        "/home/q/Documents/savestate/analysis-test/src/main.rs",
-    ));
+    println!(
+        "Searching begins at: {}",
+        std::env::current_dir().unwrap().display()
+    );
+    let input_path = std::path::PathBuf::from("./analysis-test/src/main.rs")
+        .canonicalize()
+        .unwrap();
+    let input2 = config::Input::File(input_path);
 
     let input = input2;
 
@@ -203,7 +208,9 @@ fn main() {
                 .unwrap()
                 .take()
                 .enter(|tcx: rustc_middle::ty::TyCtxt| {
-                    println!("DONE");
+                    println!("==========DONE COMPILING==========\n\n");
+                    println!("Searching for \'smpl\' annotations:\n");
+
                     // Item: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_hir/struct.Item.html
                     for (_, item) in &tcx.hir().krate().items {
                         match item.kind {
@@ -214,7 +221,7 @@ fn main() {
                                 if is_smpl_item(item) {
                                     let name = item.ident;
                                     let ty = tcx.type_of(tcx.hir().local_def_id(item.hir_id));
-                                    println!("{:?}:\t{:?}", name, ty)
+                                    println!("{:?}:\t{:?}\n", name, ty)
                                 }
                             }
                             _ => (),
