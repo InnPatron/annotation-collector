@@ -151,6 +151,8 @@ fn main() {
 
     let input = input2;
 
+    // Most of the following is taken from the Rust dev guide:
+    // https://rustc-dev-guide.rust-lang.org/rustc-driver.html/
     let out = process::Command::new("rustc")
         .arg("--print=sysroot")
         .current_dir(".")
@@ -161,6 +163,8 @@ fn main() {
         // Command line options
         opts: config::Options {
             maybe_sysroot: Some(path::PathBuf::from(sysroot)),
+
+            // NOTE: Needed to allow unstable features for this compiler instance
             unstable_features: rustc_feature::UnstableFeatures::Allow,
             ..config::Options::default()
         },
