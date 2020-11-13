@@ -24,7 +24,7 @@ use rustc_errors::registry;
 use rustc_hash::{FxHashMap, FxHashSet};
 use rustc_lint::{LintId, LintStore};
 use rustc_session::{config, Session};
-use rustc_span::{source_map, symbol};
+use rustc_span::symbol;
 
 use std::path;
 use std::process;
@@ -32,6 +32,7 @@ use std::str;
 
 use self::lint::{SmplLint, SMPL_LINT};
 
+#[allow(dead_code)]
 fn register_lints(_: &Session, lint_store: &mut LintStore) {
     lint_store.register_lints(&[SMPL_LINT]);
     lint_store.register_group(
@@ -133,13 +134,6 @@ fn main() {
     //   2) PR #66070 for implementations
     //          https://github.com/rust-lang/rust/pull/66070#issue-336079332)
     //
-    let input = "#![feature(register_tool)]\n#![register_tool(smpl)]\nstatic HELLO: &str = \"Hello, world!\"; #[smpl::capture(\"root::main\")]\nfn main() { println!(\"{}\", HELLO); }";
-
-    let input1 = config::Input::Str {
-        name: source_map::FileName::Custom("main.rs".to_string()),
-        input: input.to_string(),
-    };
-
     println!(
         "Searching begins at: {}",
         std::env::current_dir().unwrap().display()
