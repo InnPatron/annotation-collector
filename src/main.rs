@@ -45,6 +45,7 @@ fn register_lints(_: &Session, lint_store: &mut LintStore) {
 
 fn main() {
     // NOTE: Input program needs to register the tool attribute
+    // And you ALSO need to set rustc_session::config::Options.unstable_features properly
     // See:
     //   1) Issue #44690 for RFC 2103
     //          https://github.com/rust-lang/rust/issues/44690#issue-258689168
