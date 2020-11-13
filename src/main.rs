@@ -86,7 +86,8 @@ fn main() {
         //
         // Note that if you find a Some here you probably want to call that function in the new
         // function being registered.
-        register_lints: Some(Box::new(register_lints)), // Option<Box<dyn Fn(&Session, &mut LintStore) + Send + Sync>>
+        register_lints: None,
+        //register_lints: Some(Box::new(register_lints)), // Option<Box<dyn Fn(&Session, &mut LintStore) + Send + Sync>>
         // This is a callback from the driver that is called just after we have populated
         // the list of queries.
         //
